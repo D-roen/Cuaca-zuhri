@@ -1,64 +1,138 @@
-        document.getElementById('cuaca-loading').innerText = "Gagal mendeteksi lokasi. Pastikan izin GPS aktif.";
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Cuaca Zuhri Formalism</title>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e1e2f, #2a2a40);
+            color: #ffffff;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        h1 { color: #00ffcc; font-size: 24px; margin-bottom: 20px; }
+        .pilar-box {
+            background: rgba(0, 255, 204, 0.1);
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 5px solid #00ffcc;
+            text-align: left;
+        }
+        button {
+            background: linear-gradient(90deg, #00ffcc, #00abc9);
+            color: #1e1e2f;
+            border: none;
+            padding: 12px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 255, 204, 0.4);
+            transition: 0.3s;
+            width: 100%;
+            margin-top: 15px;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 255, 204, 0.6); }
+        #user-info { color: #ffcc00; font-weight: bold; margin-bottom: 15px; }
+        #loading { color: #888; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Aplikasi Cuaca Zuhri</h1>
+    
+    <div id="user-info">Memeriksa Autentikasi Pi...</div>
+    <div id="loading">Menghubungkan ke Pi Network...</div>
+
+    <div id="weather-content" style="display:none;">
+        <div class="pilar-box">
+            <strong>Pilar 1: Realitas Objektif</strong>
+            <p>Suhu Saat Ini: <span id="temp-val">30</span>°C</p>
+        </div>
+        <div class="pilar-box">
+            <strong>Pilar 2: Kesadaran Pengamat</strong>
+            <p>Kondisi: <span id="cond-val">Cerah Berawan</span></p>
+        </div>
+        <div class="pilar-box">
+            <strong>Pilar 3: Hubungan Kontekstual</strong>
+            <p id="konteks-val">Memproses data lokal...</p>
+        </div>
+        <button onclick="mintaDonasiPi()">Dukung Project (Donasi 1 Pi)</button>
+    </div>
+    
+    <button id="login-btn" style="display:none;" onclick="mulaiLoginPi()">Login Manual ke Pi Network</button>
+</div>
+
+<script>
+    // Inisialisasi Pi SDK
+    const Pi = window.Pi;
+    Pi.init({ version: "2.0", sandbox: false });
+
+    async function authPi() {
+        try {
+            const scopes = ['username', 'payments'];
+            function onIncompletePaymentFound(payment) {
+                console.log("Pembayaran menggantung ditemukan:", payment);
+            };
+
+            const auth = await Pi.authenticate(scopes, onIncompletePaymentFound);
+            document.getElementById('user-info').innerText = "Halo, " + auth.user.username + "! 👋";
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('weather-content').style.display = 'block';
+            document.getElementById('login-btn').style.display = 'none';
+            
+            // Jalankan logika cuaca setelah sukses login
+            prosesCuacaZuhri();
+        } catch (err) {
+            console.error(err);
+            document.getElementById('user-info').innerText = "Akses Pi Autentikasi Diperlukan";
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('login-btn').style.display = 'block';
+        }
     }
 
-    // 3. Ambil Data Cuaca Nyata dari API Open-Meteo (Pilar 1)
-    function ambilDataCuacaAsli(position) {
-        const lat = position.coords.latitude.toFixed(4);
-        const lon = position.coords.longitude.toFixed(4);
-        
-        document.getElementById('koordinat').innerText = `${lat}, ${lon}`;
-
-        const urlAPI = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,wind_speed_10m`;
-
-        fetch(urlAPI)
-            .then(response => response.json())
-            .then(data => {
-                const suhuAsli = data.current.temperature_2m;
-                const anginAsli = data.current.wind_speed_10m;
-
-                // Tampilkan data ke layar (Pilar 1 terpenuhi)
-                document.getElementById('suhu').innerText = suhuAsli;
-                document.getElementById('angin').innerText = anginAsli;
-                
-                document.getElementById('cuaca-loading').style.display = 'none';
-                document.getElementById('cuaca-data').style.display = 'block';
-
-                // Proses ke Pilar 2: Kontekstualisasi berdasarkan data nyata
-                prosesKontekstualisasiZuhri(suhuAsli, anginAsli);
-            })
-            .catch(err => {
-                document.getElementById('cuaca-loading').innerText = "Gagal memuat data dari stasiun cuaca.";
-            });
+    function mulaiLoginPi() {
+        document.getElementById('loading').style.display = 'block';
+        authPi();
     }
 
-    // 4. Logika Kontekstualisasi Formalism (Pilar 2)
-    function prosesKontekstualisasiZuhri(suhu, angin) {
-        let narasiKonteks = "";
-
-        // Contoh formulasi keputusan berdasarkan parameter objektif suhu & angin
-        if (suhu > 32) {
-            narasiKonteks = `Suhu lingkungan terdeteksi cukup panas (${suhu}°C). Berdasarkan prinsip efisiensi energi Zuhri, kurangi aktivitas fisik berat di luar ruangan. Jaga hidrasi tubuh dan pastikan perangkat penambangan (node/HP) Anda berada di tempat yang teduh agar tidak overheat.`;
-        } else if (suhu < 24) {
-            narasiKonteks = `Kondisi sekitar terdeteksi sejuk/dingin (${suhu}°C). Kondisi yang sangat ideal dan stabil untuk fokus beraktivitas produktif di dalam ruangan atau meneliti pergerakan ekosistem Pi.`;
+    function prosesCuacaZuhri() {
+        let suhu = 31; 
+        let narasi = "";
+        if(suhu > 32) {
+            narasi = "Suhu lingkungan tinggi terdeteksi secara objektif.";
+        } else if(suhu < 24) {
+            narasi = "Kondisi sekitar terdeteksi dingin.";
         } else {
-            narasiKonteks = `Cuaca dalam kondisi seimbang dan normal (${suhu}°C). Atmosfer yang sangat mendukung untuk melakukan aktivitas luar ruangan secara optimal maupun berinteraksi dengan komunitas Pioneer.`;
+            narasi = "Cuaca dalam kondisi seimbang sesuai harmoni Zuhri Formalism.";
         }
-
-        if (angin > 20) {
-            narasiKonteks += ` Peringatan tambahan: Angin berhembus kencang (${angin} km/jam), tetap waspada jika berada di bawah struktur tinggi.`;
-        }
-
-        document.getElementById('konteks-loading').style.display = 'none';
-        const elemenRekomendasi = document.getElementById('rekomendasi');
-        elemenRekomendasi.innerText = narasiKonteks;
-        elemenRekomendasi.style.display = 'block';
+        document.getElementById('konteks-val').innerText = narasi;
     }
 
-    // 5. Fungsi Transaksi Pi untuk Utilitas Komunitas (Pilar 3)
     function mintaDonasiPi() {
-        // Ini adalah cetakan fungsi transfer Pi SDK yang nantinya divalidasi oleh dompet Pi
-        alert("Pilar 3 Berjalan: Sistem bersiap memanggil fungsi transfer Pi SDK sebesar 0.1 Pi untuk keberlanjutan data cuaca komunitas.");
+        alert("Sistem Pembayaran Pi SDK Siap Diproses!");
     }
+
+    // Jalankan autentikasi otomatis saat aplikasi dibuka
+    window.onload = function() {
+        authPi();
+    };
 </script>
 
 </body>
