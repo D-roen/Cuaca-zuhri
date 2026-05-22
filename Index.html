@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Cuaca Zuhri - Pi Ecosystem</title>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; color: #333; text-align: center; padding: 20px; margin: 0; }
+        .container { max-width: 450px; margin: 20px auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); }
+        h2 { color: #5b47d6; margin-bottom: 5px; }
+        .subtitle { font-style: italic; color: #666; font-size: 0.9em; margin-bottom: 20px; }
+        .pilar-box { border-left: 5px solid #5b47d6; background: #f8f7ff; margin: 20px 0; padding: 15px; text-align: left; border-radius: 0 15px 15px 0; }
+        .pilar-title { font-weight: bold; color: #4a37b3; font-size: 1em; margin-bottom: 8px; display: block; }
+        .weather-info { font-size: 1.1em; line-height: 1.6; }
+        .highlight { font-weight: bold; color: #2d3748; }
+        button { background-color: #5b47d6; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; transition: background 0.2s; }
+        button:hover { background-color: #4a37b3; }
+        .loading { font-style: italic; color: #888; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Aplikasi Cuaca Zuhri</h2>
+    <div class="subtitle">Berbasis 3 Pilar Zuhri Formalism</div>
+    <hr style="border: 0; border-top: 1px solid #eee;">
+
+    <div class="pilar-box">
+        <span class="pilar-title">Pilar 1: Objektivitas Data Real-Time</span>
+        <div id="cuaca-loading" class="loading">Mendeteksi lokasi & mengunduh data cuaca objektif...</div>
+        <div id="cuaca-data" style="display:none;" class="weather-info">
+            Koordinat: <span id="koordinat" class="highlight">--</span><br>
+            Suhu Udara: <span id="suhu" class="highlight">--</span>°C<br>
+            Kecepatan Angin: <span id="angin" class="highlight">--</span> km/jam
+        </div>
+    </div>
+
+    <div class="pilar-box">
+        <span class="pilar-title">Pilar 2: Kontekstualisasi & Tindakan</span>
+        <div id="konteks-loading" class="loading">Menunggu data objektif...</div>
+        <p id="rekomendasi" style="display:none; margin: 0; line-height: 1.5;"></p>
+    </div>
+
+    <div class="pilar-box">
+        <span class="pilar-title">Pilar 3: Integrasi Ekosistem Pi</span>
+        <p id="pi-status" style="margin: 0 0 12px 0;">Menghubungkan ke jaringan Pi...</p>
+        <button onclick="mintaDonasiPi()">Kontribusi Dukungan Eksositem (0.1 Pi)</button>
+    </div>
+</div>
+
+<script>
+    // 1. Inisialisasi Pi SDK untuk ekosistem Pi Browser
+    try {
+        Pi.init({ version: "2.0", sandbox: true });
+        document.getElementById('pi-status').innerHTML = "🟢 Terhubung dengan <strong>Pi Testnet Sandbox</strong>";
+    } catch(e) {
+        document.getElementById('pi-status').innerHTML = "🟡 Berjalan di luar Pi Browser (Mode Web Standar)";
+    }
+
+    // 2. Mengambil Lokasi Riil Pengguna via GPS HP
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(ambilDataCuacaAsli, tanganiErrorLokasi);
+    } else {
+        document.getElementById('cuaca-loading').innerText = "Geolokasi tidak didukung oleh perangkat ini.";
+    }
+
+    function tanganiErrorLokasi(error) {
+        document.getElementById('cuaca-loading').innerText = "Gagal mendeteksi lokasi. Pastikan izin GPS aktif.";
+    }
+
+    // 3. Ambil Data Cuaca Nyata dari API Open-Meteo (Pilar 1)
+    function ambilDataCuacaAsli(position) {
+        const lat = position.coords.latitude.toFixed(4);
+        const lon = position.coords.longitude.toFixed(4);
+        
+        document.getElementById('koordinat').innerText = `${lat}, ${lon}`;
+
+        const urlAPI = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,wind_speed_10m`;
+
+        fetch(urlAPI)
+            .then(response => response.json())
+            .then(data => {
+                const suhuAsli = data.current.temperature_2m;
+                const anginAsli = data.current.wind_speed_10m;
+
+                // Tampilkan data ke layar (Pilar 1 terpenuhi)
+                document.getElementById('suhu').innerText = suhuAsli;
+                document.getElementById('angin').innerText = anginAsli;
+                
+                document.getElementById('cuaca-loading').style.display = 'none';
+                document.getElementById('cuaca-data').style.display = 'block';
+
+                // Proses ke Pilar 2: Kontekstualisasi berdasarkan data nyata
+                prosesKontekstualisasiZuhri(suhuAsli, anginAsli);
+            })
+            .catch(err => {
+                document.getElementById('cuaca-loading').innerText = "Gagal memuat data dari stasiun cuaca.";
+            });
+    }
+
+    // 4. Logika Kontekstualisasi Formalism (Pilar 2)
+    function prosesKontekstualisasiZuhri(suhu, angin) {
+        let narasiKonteks = "";
+
+        // Contoh formulasi keputusan berdasarkan parameter objektif suhu & angin
+        if (suhu > 32) {
+            narasiKonteks = `Suhu lingkungan terdeteksi cukup panas (${suhu}°C). Berdasarkan prinsip efisiensi energi Zuhri, kurangi aktivitas fisik berat di luar ruangan. Jaga hidrasi tubuh dan pastikan perangkat penambangan (node/HP) Anda berada di tempat yang teduh agar tidak overheat.`;
+        } else if (suhu < 24) {
+            narasiKonteks = `Kondisi sekitar terdeteksi sejuk/dingin (${suhu}°C). Kondisi yang sangat ideal dan stabil untuk fokus beraktivitas produktif di dalam ruangan atau meneliti pergerakan ekosistem Pi.`;
+        } else {
+            narasiKonteks = `Cuaca dalam kondisi seimbang dan normal (${suhu}°C). Atmosfer yang sangat mendukung untuk melakukan aktivitas luar ruangan secara optimal maupun berinteraksi dengan komunitas Pioneer.`;
+        }
+
+        if (angin > 20) {
+            narasiKonteks += ` Peringatan tambahan: Angin berhembus kencang (${angin} km/jam), tetap waspada jika berada di bawah struktur tinggi.`;
+        }
+
+        document.getElementById('konteks-loading').style.display = 'none';
+        const elemenRekomendasi = document.getElementById('rekomendasi');
+        elemenRekomendasi.innerText = narasiKonteks;
+        elemenRekomendasi.style.display = 'block';
+    }
+
+    // 5. Fungsi Transaksi Pi untuk Utilitas Komunitas (Pilar 3)
+    function mintaDonasiPi() {
+        // Ini adalah cetakan fungsi transfer Pi SDK yang nantinya divalidasi oleh dompet Pi
+        alert("Pilar 3 Berjalan: Sistem bersiap memanggil fungsi transfer Pi SDK sebesar 0.1 Pi untuk keberlanjutan data cuaca komunitas.");
+    }
+</script>
+
+</body>
+</html>
